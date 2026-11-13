@@ -1,0 +1,40 @@
+name: Publicar CODE QUEST 3
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages-v3
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Recuperar y verificar el paquete del repositorio
+        run: |
+          base64 --decode CODE_QUEST_Android_v3.zip.b64 > "$RUNNER_TEMP/codequest-v3.zip"
+          echo "5e987e5369d6eb916a1a528d3b36a6117e7be58983a715e0f25ce3f03b6d5e00  $RUNNER_TEMP/codequest-v3.zip" | sha256sum --check
+          unzip -q "$RUNNER_TEMP/codequest-v3.zip" -d app
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verificar el juego
+        working-directory: app/CODE_QUEST_Android_v3
+        run: |
+          npm run check
+          npm test
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: app/CODE_QUEST_Android_v3/dist
+      - name: Publicar
+        id: deployment
+        uses: actions/deploy-pages@v4
